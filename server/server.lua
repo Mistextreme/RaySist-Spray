@@ -1,9 +1,9 @@
-local QBCore = exports['qb-core']:GetCoreObject()
+local ESX = exports['es_extended']:getSharedObject()
 
 -- Register the useable item
-QBCore.Functions.CreateUseableItem("spray", function(source)
-    local Player = QBCore.Functions.GetPlayer(source)
-    if Player.Functions.GetItemByName("spray") then
+ESX.RegisterUsableItem("spray", function(source)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if xPlayer.getInventoryItem("spray").count > 0 then
         TriggerClientEvent("RaySist-spray:useSprayItem", source)
     end
 end)
@@ -33,11 +33,11 @@ RegisterNetEvent('RaySist-spray:addSpray')
 AddEventHandler('RaySist-spray:addSpray', function(spray)
     local source = source
 
-    local xPlayer = QBCore.Functions.GetPlayer(source)
-    local item = xPlayer.Functions.GetItemByName("spray")
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local item = xPlayer.getInventoryItem("spray")
 
-    if item then
-        xPlayer.Functions.RemoveItem("spray", 1)
+    if item.count > 0 then
+        xPlayer.removeInventoryItem("spray", 1)
         local i = 1
         while true do
             if not SPRAYS[i] then
@@ -60,12 +60,7 @@ AddEventHandler('RaySist-spray:addSpray', function(spray)
 end)
 
 function PersistSpray(spray)
-    MySQL.Async.execute([[
-        INSERT sprays
-        (`x`, `y`, `z`, `rx`, `ry`, `rz`, `scale`, `text`, `font`, `color`, `interior`)
-        VALUES
-        (@x, @y, @z, @rx, @ry, @rz, @scale, @text, @font, @color, @interior)
-    ]], {
+    MySQL.Async.execute('INSERT INTO sprays (x, y, z, rx, ry, rz, scale, text, font, color, interior) VALUES (@x, @y, @z, @rx, @ry, @rz, @scale, @text, @font, @color, @interior)', {
         ['@x'] = spray.location.x,
         ['@y'] = spray.location.y,
         ['@z'] = spray.location.z,
@@ -81,15 +76,11 @@ function PersistSpray(spray)
 end
 
 Citizen.CreateThread(function()
-    MySQL.Sync.execute([[
-        DELETE FROM sprays
-        WHERE DATEDIFF(NOW(), created_at) >= @days
-    ]], {['days'] = Config.SPRAY_PERSIST_DAYS})
+    MySQL.Sync.execute('DELETE FROM sprays WHERE DATEDIFF(NOW(), created_at) >= @days', {
+        ['days'] = Config.SPRAY_PERSIST_DAYS
+    })
 
-    local results = MySQL.Sync.fetchAll([[
-        SELECT x, y, z, rx, ry, rz, scale, text, font, color, created_at, interior
-        FROM sprays
-    ]])
+    local results = MySQL.Sync.fetchAll('SELECT x, y, z, rx, ry, rz, scale, text, font, color, created_at, interior FROM sprays')
 
     for _, s in pairs(results) do
         table.insert(SPRAYS, {
@@ -114,10 +105,10 @@ end)
 
 RegisterCommand('spray', function(source, args)
     local source = source
-    local xPlayer = QBCore.Functions.GetPlayer(source)
-    local item = xPlayer.Functions.GetItemByName("spray")
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local item = xPlayer.getInventoryItem("spray")
 
-    if item then
+    if item.count > 0 then
         local sprayText = args[1]
 
         if FastBlacklist[sprayText] then
@@ -152,8 +143,8 @@ end, false)
 
 function HasSpray(serverId, cb)
     local source = source
-    local xPlayer = QBCore.Functions.GetPlayer(source)
-    local item = xPlayer.Functions.GetItemByName("spray")
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local item = xPlayer.getInventoryItem("spray")
 
     cb(item.count > 0)
 end
