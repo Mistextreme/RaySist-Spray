@@ -5,7 +5,8 @@ description 'RaySist-Spray'
 version '1.0.2'
 
 shared_scripts {
-    '@qb-core/shared/locale.lua',
+    '@es_extended/locale.lua',
+    '@ox_lib/init.lua',
     'config.lua'
 }
 
